@@ -54,8 +54,13 @@ module RAM256x8 (inout logic[7:0] ram_data, input logic[7:0] ram_address, input 
 endmodule
 
 module mux2to1_4bit(input logic[3:0] mux4_in1, mux4_in2, logic mux4_sel, output logic[3:0] mux4_out);
-    assign mux4_out = (mux4_sel) ? mux_in1 : mux4_in2;
+    assign mux4_out = (mux4_sel) ? mux4_in1 : mux4_in2;
 endmodule
+
+module mux2to1_8bit(input logic[7:0] mux8_in1, mux8_in2, logic mux8_sel, output logic[7:0] mux8_out);
+    assign mux8_out = (mux8_sel) ? mux8_in1 : mux8_in2;
+endmodule
+
 
 module mux4to1_8bit(input logic[7:0] mux8_in1, mux8_in2, mux8_in3,mux8_in4,logic[1:0] mux8_sel, output logic[7:0]mux8_out);
 	always_comb begin
@@ -94,7 +99,7 @@ endmodule
 
 module PC (input clk, PC_reset, logic [7:0] PC_in, output logic [7:0] PC_out);
 	logic [7:0] PC_out;
-	always @ (posedge clk | posedge reset) begin
+	always @ (posedge clk | posedge PC_reset) begin
 		if(PC_reset)
 			PC_out <= 8'b00000000;
 		else
@@ -124,7 +129,7 @@ module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data1, rom_dat
 endmodule
 
 module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
-				output logic n_cs, n_oe, n_we, regdest, alu_op, jumpCond, logic[1:0] mem_to_reg, logic[2:0] alu_func)
+				output logic n_cs, n_oe, n_we, regdest, alu_op, regWrite, jumpCond, logic[1:0] mem_to_reg, logic[2:0] alu_func)
 	
 	logic isJumpOpcode;
 	logic jumpFunc[2:0]
@@ -133,29 +138,29 @@ module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
 		// load reg with immediate value
 		if(opcode1[7:4] == 4'b0001) begin
 			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 0;
-			mem_to_reg = 2'b00; jumpCond = 0;
+			mem_to_reg = 2'b00; jumpCond = 0;	regWrite1 = 1;
 		end
 		// read
 		// load reg with memory content
 		else if(opcode1[7:4] == 4'b0010) begin
 			n_cs = 0;	n_oe = 0;	n_we = 1;	alu_op = 0;
-			mem_to_reg = 2'b01; jumpCond = 0;
+			mem_to_reg = 2'b01; jumpCond = 0;	regWrite = 1;
 		end
 		// write
 		// store
 		else if(opcode1[7:4] == 4'b0011) begin
 			n_cs = 0;	n_oe = 1;	n_we = 0;	alu_op = 0;
-			mem_to_reg = 2'b11; jumpCond = 0;
+			mem_to_reg = 2'b11; jumpCond = 0;	regWrite = 0;
 		end
 		// ALU
 		else if(opcode1[7]) begin
 			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 1;
-			mem_to_reg = 2'b10; jumpCond = 0;
+			mem_to_reg = 2'b10; jumpCond = 0;	regWrite = 1;
 		end
 		else begin
 			isJumpOpcode = (opcode1[7:4] == 0'b0100) ? 1 : 0;
 			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 0;
-			mem_to_reg = 2'b11;
+			mem_to_reg = 2'b11; regWrite = 0;
 			if(isJumpOpcode) begin
 				if(opcode1[2:0] == 3'b000)
 					jumpCond = 1;
@@ -178,9 +183,35 @@ endmodule
 
 module datapath(inout logic[7:0] ram_data,
 				input logic[7:0] opcode1, opcode2,
-					logic  Carry_f, Zero_f, n_cs, n_oe, n_we, regdest, alu_op, jumpCond,
 					logic [1:0] mem_to_reg,
+					logic  Carry_f, Zero_f, n_cs, n_oe, n_we, regdest, alu_op, jumpCond, clk, regWrite,
 				output logic[7:0] rom_address);
+
+logic [3:0] alu_in1;
+logic [3:0] alu_in2;
+logic [7:0] adder_out;
+logic [7:0] reg_d_in;
+
+assign alu_in1 = opcode1[3:0];
+assign alu_in2 = opcode2[7:4];
+assign din_1_load = ram_data[opcode2];
+
+
+PC pc (.clk(clk), .PC_reset(res), .PC_in(mux), .PC_out(PC_out))
+adder pc_increment (.adder_in1(PC_out), .adder_in2(8'b0000_0001), .adder_out(adder_out));
+mux2to1_8bit pc_mux (.mux8_in1(adder_out), .mux8_in2(opcode2), .mux8_sel(jumpCond), .mux8_out(rom_address));
+mux2to1_4bit regDest_mux (.mux4_in1(opcode1[3:0]), .mux4_in2(opcode2[3:0]), .mux4_sel(regdest), .mux4_out(reg_write_addr));
+
+mux4to1_8bit mem_to_reg (.mux8_in1(opcode2), mux8_in2(), .mux8_in3(alu_out),.mux8_in4(mux8_in4),.memToReg(memToReg), .mux8_out(reg_d_in));
+
+
+reg8x8 registers (.regWrite(regWrite),.reg_read_addr1(opcode1[3:0]), .reg_read_addr2(opcode2[7:4]), .reg_write_addr(reg_write_addr), reg_d_in(din_1_load), .reg_d_out1(reg_d_out1), .reg_d_out2(reg_d_out2));
+
+RAM256x8 ram (.ram_data(reg_d_out1), .ram_address(opcode2), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .clk(clk));
+
+
+ALU(.alu_in1(alu_in1), .alu_in2(alu_in2), .alu_func(alu_func) , .alu_op(alu_op), .alu_out(alu_out), .Carry_f(Carry_f), .Zero_f(Zero_f));
+
 
 endmodule
 
