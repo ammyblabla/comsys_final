@@ -1,4 +1,5 @@
 module ALU(input logic[3:0] alu_in1, alu_in2, logic[2:0] alu_func , logic alu_op, output logic[3:0] alu_out, logic Carry_f, Zero_f);
+
 	always_comb begin
 		if(alu_op) begin
 			if(alu_func == 3'b000) begin
@@ -102,7 +103,7 @@ module PC (input clk, PC_reset, logic [7:0] PC_in, output logic [7:0] PC_out);
 endmodule
 
 // opcode 1+2
-module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data);
+module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data1, rom_data2);
 	logic[7:0] rom [0:255];
 	int i;
 	initial begin
@@ -117,12 +118,13 @@ module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data);
 	rom[2] = 8'b0000_0001; //from mem(ram) 1 
  
 	always_comb begin
-		rom_data = rom[rom_address];
+		rom_data1 = rom[rom_address];
+		rom_data2 = (rom_address == 255) ? 8'b0000_0000:rom[rom_address+1];
 	end
 endmodule
 
 module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
-				output logic n_cs, n_oe, n_we, regdest, alu_op, logic[1:0] mem_to_reg, logic[2:0] alu_func, jumpCond)
+				output logic n_cs, n_oe, n_we, regdest, alu_op, jumpCond, logic[1:0] mem_to_reg, logic[2:0] alu_func)
 	
 	logic isJumpOpcode;
 	logic jumpFunc[2:0]
@@ -174,54 +176,16 @@ module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
 	end
 endmodule
 
+module datapath(inout logic[7:0] ram_data,
+				input logic[7:0] opcode1, opcode2,
+					logic  Carry_f, Zero_f, n_cs, n_oe, n_we, regdest, alu_op, jumpCond,
+					logic [1:0] mem_to_reg,
+				output logic[7:0] rom_address);
+
+endmodule
+
+
 module CPU;
-    // PC flipflop เก็บ counter ไว้ส่งให้ rom
-	// ROM - Instruction memory / เรียกที่ testbench ทีเดียว
-		//ส่ง opcode1, 2 ออกมา //opcode2 = rom[PC+1]
-	// ต่อ opcode แบบมัดมือชก
-		// controller opcode1[7:4]
-		// branch-jump control opcode1[3:0], opcode2
-	// ALU func=opcode[6:4] 
-		// อาจจะมีโมดูลเรียกเลขจาก register หรือไม่ก็เรียกใน ALU เลย
-		// reg1=opcode1[3:0] reg2=opcode2[7:4] reg3=opcode[3:0]
-		// aluOp = (opcode1[7:6] == 2'b10) ? 1:0;
-    // RAM
-		// go to controller
-		// n_cs, n_oe, n_we
-		// n_cs = not chip select
-			// 0 = store-load 
-			// 1 = alu, jump
-		// n_oe = not read
-			// 0 = load
-			// 1 = store, alu, jump
-		// n_we = not write
-			// 0 = store
-			// 1 = , alu, store
-    // REG
-		// regWrite
-			// 0 = store, jump
-			// 1 = alu, load
-		// reg address
-			// reg_read_addr1 = opcode1[3:0]
-			// reg_read_addr2 = opcode2[7:4]
-			// reg_write_addr 
-				// regdest
-				// 1 = load opcode1[3:0]
-				// 0 = alu opcode2[3:0]
-		// reg data
-			// reg_d_out1 = reg[opcode1[3:0]]
-			// reg_d_out2 = reg[opcode2[7:4]]
-			// reg_d_in 
-				// memToReg
-				// 00 = load immediate opcode2
-				// 01 = load ram[opcode2]
-				// 10 = ALU output
-	// JUMP
-		// jumpcond = (opcode1[7:4] == 2'b0100)?1:0;
-		// go to jump module
-		// 0 = PC 1 = opcode2
-    // ADDER PC = PC+1
-    // MUX2to1 4 bit
-	// MUX4to1 8 bit
+
 
 endmodule
