@@ -121,46 +121,55 @@ module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data);
 	end
 endmodule
 
-module jumpController(input logic[7:0] opcode1, logic Carry_f, Zero_f, output logic jumpCond);
+module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
+				output logic n_cs, n_oe, n_we, regdest, alu_op, logic[1:0] mem_to_reg, logic[2:0] alu_func, jumpCond)
+	
 	logic isJumpOpcode;
 	logic jumpFunc[2:0]
-	// always_ff @(posedge isJumpOpcode) begin
-	always_comb begin
-		isJumpOpcode = (opcode1[7:4] == 0'b0100) ? 1 : 0;
-		if(isJumpOpcode) begin
-			if(opcode1[2:0] == 3'b000)
-				jumpCond = 1;
-			else if(opcode1[1:0] == 2'b01) begin
-				if(opcode1[2] == 0)
-					jumpCond = Carry_f;
-				else
-					jumpCond = ~Carry_f;
-			end
-			else if(opcode1[1:0] == 2'b10) begin
-				if(opcode1[2] == 0)
-					jumpCond = Zero_f;
-				else
-					jumpCond = ~Zero_f;
-			end 
-		end
-	end
-endmodule
 
-
-// not finish
-module Controller(input logic[7:0] opcode1,
-				output logic n_cs, n_oe, n_we, regdest, alu_op, logic[1:0] mem_to_reg, logic[2:0] alu_func)
-	
 	always_comb begin
 		// load reg with immediate value
 		if(opcode1[7:4] == 4'b0001) begin
-			n_cs = 0;	n_oe = 1;	n_we = 0;	alu_op = 0;
-			mem_to_reg = 2'b00;
+			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 0;
+			mem_to_reg = 2'b00; jumpCond = 0;
 		end
+		// read
 		// load reg with memory content
 		else if(opcode1[7:4] == 4'b0010) begin
+			n_cs = 0;	n_oe = 0;	n_we = 1;	alu_op = 0;
+			mem_to_reg = 2'b01; jumpCond = 0;
+		end
+		// write
+		// store
+		else if(opcode1[7:4] == 4'b0011) begin
 			n_cs = 0;	n_oe = 1;	n_we = 0;	alu_op = 0;
-			mem_to_reg = 2'b01;
+			mem_to_reg = 2'b11; jumpCond = 0;
+		end
+		// ALU
+		else if(opcode1[7]) begin
+			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 1;
+			mem_to_reg = 2'b10; jumpCond = 0;
+		end
+		else begin
+			isJumpOpcode = (opcode1[7:4] == 0'b0100) ? 1 : 0;
+			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 0;
+			mem_to_reg = 2'b11;
+			if(isJumpOpcode) begin
+				if(opcode1[2:0] == 3'b000)
+					jumpCond = 1;
+				else if(opcode1[1:0] == 2'b01) begin
+					if(opcode1[2] == 0)
+						jumpCond = Carry_f;
+					else
+						jumpCond = ~Carry_f;
+				end
+				else if(opcode1[1:0] == 2'b10) begin
+					if(opcode1[2] == 0)
+						jumpCond = Zero_f;
+					else
+						jumpCond = ~Zero_f;
+				end 
+			end
 		end
 	end
 endmodule
@@ -180,14 +189,14 @@ module CPU;
 		// go to controller
 		// n_cs, n_oe, n_we
 		// n_cs = not chip select
-			// 0 = store-load
-			// 1 = jump, alu
+			// 0 = store-load 
+			// 1 = alu, jump
 		// n_oe = not read
-			// 0 = jump, alu, store
-			// 1 = load
+			// 0 = load
+			// 1 = store, alu, jump
 		// n_we = not write
-			// 0 = store-load
-			// 1 = jump, alu
+			// 0 = store
+			// 1 = , alu, store
     // REG
 		// regWrite
 			// 0 = store, jump
