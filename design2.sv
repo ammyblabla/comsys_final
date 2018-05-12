@@ -187,31 +187,28 @@ module datapath(inout logic[7:0] ram_data,
 					logic  Carry_f, Zero_f, n_cs, n_oe, n_we, regdest, alu_op, jumpCond, clk, regWrite,
 				output logic[7:0] rom_address);
 
-logic [3:0] alu_in1;
-logic [3:0] alu_in2;
-logic [7:0] adder_out;
-logic [7:0] reg_d_in;
+	logic [3:0] alu_in1;
+	logic [3:0] alu_in2;
+	logic [7:0] adder_out;
+	logic [7:0] reg_d_in;
+	logic [2:0] reg_write_addr;
+	logic [7:0] reg_d_out1;
+	logic [7:0] reg_d_out2;
 
-assign alu_in1 = opcode1[3:0];
-assign alu_in2 = opcode2[7:4];
-assign din_1_load = ram_data[opcode2];
-
-
-PC pc (.clk(clk), .PC_reset(res), .PC_in(mux), .PC_out(PC_out))
-adder pc_increment (.adder_in1(PC_out), .adder_in2(8'b0000_0001), .adder_out(adder_out));
-mux2to1_8bit pc_mux (.mux8_in1(adder_out), .mux8_in2(opcode2), .mux8_sel(jumpCond), .mux8_out(rom_address));
-mux2to1_4bit regDest_mux (.mux4_in1(opcode1[3:0]), .mux4_in2(opcode2[3:0]), .mux4_sel(regdest), .mux4_out(reg_write_addr));
-
-mux4to1_8bit mem_to_reg (.mux8_in1(opcode2), mux8_in2(), .mux8_in3(alu_out),.mux8_in4(mux8_in4),.memToReg(memToReg), .mux8_out(reg_d_in));
+	assign alu_in1 = reg_d_out1;
+	assign alu_in2 = reg_d_out2;
+	assign din_1_load = ram_data[opcode2];
+	assign ram_data = reg_d_out1;
 
 
-reg8x8 registers (.regWrite(regWrite),.reg_read_addr1(opcode1[3:0]), .reg_read_addr2(opcode2[7:4]), .reg_write_addr(reg_write_addr), reg_d_in(din_1_load), .reg_d_out1(reg_d_out1), .reg_d_out2(reg_d_out2));
-
-RAM256x8 ram (.ram_data(reg_d_out1), .ram_address(opcode2), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .clk(clk));
-
-
-ALU(.alu_in1(alu_in1), .alu_in2(alu_in2), .alu_func(alu_func) , .alu_op(alu_op), .alu_out(alu_out), .Carry_f(Carry_f), .Zero_f(Zero_f));
-
+	PC pc (.clk(clk), .PC_reset(res), .PC_in(rom_address), .PC_out(PC_out))
+	adder pc_increment (.adder_in1(PC_out), .adder_in2(8'b0000_0001), .adder_out(adder_out));
+	mux2to1_8bit pc_mux (.mux8_in1(adder_out), .mux8_in2(opcode2), .mux8_sel(jumpCond), .mux8_out(rom_address));
+	mux2to1_4bit regDest_mux (.mux4_in1(opcode1[3:0]), .mux4_in2(opcode2[3:0]), .mux4_sel(regdest), .mux4_out(reg_write_addr));
+	mux4to1_8bit mem_to_reg_mux (.mux8_in1(opcode2), mux8_in2(ram_data), .mux8_in3(alu_out),.mux8_in4(8'b0000_0000),.mem_to_reg(mem_to_re), .mux8_out(reg_d_in));
+	reg8x8 registers (.regWrite(regWrite),.reg_read_addr1(opcode1[3:0]), .reg_read_addr2(opcode2[7:4]), .reg_write_addr(reg_write_addr), reg_d_in(reg_d_in), .reg_d_out1(reg_d_out1), .reg_d_out2(reg_d_out2));
+	RAM256x8 ram (.ram_data(reg_d_out1), .ram_address(opcode2), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .clk(clk));
+	ALU(.alu_in1(alu_in1), .alu_in2(alu_in2), .alu_func(alu_func) , .alu_op(alu_op), .alu_out(alu_out), .Carry_f(Carry_f), .Zero_f(Zero_f));
 
 endmodule
 

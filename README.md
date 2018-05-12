@@ -11,6 +11,8 @@ ALU func=opcode[6:4]
 	reg1=opcode1[3:0] reg2=opcode2[7:4] reg3=opcode[3:0]
 	aluOp = (opcode1[7:6] == 2'b10) ? 1:0;
 RAM
+module RAM256x8 (inout logic[7:0] ram_data, input logic[7:0] ram_address, input logic n_cs, n_oe, n_we, clk);
+
 	go to controller
 	n_cs, n_oe, n_we
 	n_cs = not chip select
