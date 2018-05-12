@@ -130,7 +130,6 @@ module PC(input logic[7:0] branch_addr, logic jumpCond, clk,reset ,output logic[
 		else if(jumpCond == 1) next_addr = branch_addr;
 		else next_addr = current_addr + 2;
 		PC_Out = current_addr;
-		if(next_addr > 8'b1111_1111) next_addr = 0; 
 	end
 	d_flipflop_8bit ff(.clk(clk), .d(next_addr), .q(current_addr));
 endmodule
@@ -169,7 +168,7 @@ module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
 			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 1;
 			mem_to_reg = 2'b10; jumpCond = 0;	regWrite = 1; regdest=0;
 		end
-		else begin
+		else if(opcode1[7:6] == 2'b01) begin
 			isJumpOpcode = (opcode1[7:4] == 0'b0100) ? 1 : 0;
 			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 0;
 			mem_to_reg = 2'b11; regWrite = 0;
@@ -188,6 +187,9 @@ module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
 					else
 						jumpCond = ~Zero_f;
 				end 
+			end
+			else begin
+				jumpCond = 0; regWrite = 0;
 			end
 		end
 	end

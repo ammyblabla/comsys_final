@@ -43,29 +43,31 @@ module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data1, rom_dat
 
 	// assign rom
 	initial begin
-		rom[0] = 8'b0000_0000;	rom[1] = 8'b0000_0000; //nop
-		// load reg 0000 with imm 1111_1111
-        rom[2] = 8'b0001_0000;	rom[3] = 8'b1111_1111;
-		// load reg 0001 with imm 0000_0001
-        rom[4] = 8'b0001_0001;	rom[5] = 8'b0000_0001;
-		// load reg 0010 with imm 1111_1000
-		rom[6] = 8'b0001_0010;	rom[7] = 8'b1111_1000;
-		// reg 0000+0001 = reg 0011
-		rom[8] = 8'b1000_0000;	rom[9] = 8'b0001_0011;
-		// store reg 0011 to mem 1000_0010
-		rom[10] = 8'b0011_0011;	rom[11] = 8'b1000_0010;
-		// load to reg 0000from mem 0111_0011
-		rom[12] = 8'b0010_0000;	rom[13] = 8'b0111_0011;
-		// jump uncond to 0000_0000
-		rom[14] = 8'b0100_1000; rom[15] = 8'b0000_0000;
-		// jump when carry_flag is set to 0000_0010
-		rom[14] = 8'b0100_1001; rom[15] = 8'b0000_0010;
-		// jump when carry_flag is not set to 0000_0100
-		rom[16] = 8'b0100_1101; rom[17] = 8'b0000_0100;
-		// jump when zero_flag is set to 0000_1000
-		rom[18] = 8'b0100_0010; rom[19] = 8'b0000_1000;
-		// jump when zero_flag is not set to 0000_1100
-		rom[20] = 8'b0100_0110; rom[21] = 8'b0000_1100;
+		// load reg 0000 with imm 0000_0011 // multiplicant
+        rom[0] = 8'b0001_0000;	rom[1] = 8'b0000_0011;
+
+		// load reg 0001 with imm 0000_0010 // multiplier
+        rom[2] = 8'b0001_0001;	rom[3] = 8'b0000_0010;
+
+		// load reg 0010 with imm 0000_0000 // result
+        rom[4] = 8'b0001_0010;	rom[5] = 8'b0000_0000;
+
+		// load reg 0011 with imm 0000_0001 // 1
+        rom[6] = 8'b0001_0011;	rom[7] = 8'b0000_0001;
+
+		// reg 0000 + 0010 = reg 0010
+		// multiplicant + result = result
+        rom[8] = 8'b1000_0000;	rom[9] = 8'b0010_0010;
+		
+		// reg 0001 - reg 0011 = reg 0001
+		// multiplier - 1 = multiplier
+		rom[10] = 8'b1001_0001;	rom[11] = 8'b0011_0001;
+		
+		// jump to 8 if mutiplier not zero
+		rom[12] = 8'b0100_0110; rom[13] = 8'b0000_1000;
+
+		// store reg 0010 to mem 0000_0000
+        rom[14] = 8'b0001_0010;	rom[15] = 8'b0000_0000;
 
 	end
 
