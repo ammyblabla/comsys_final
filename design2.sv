@@ -1,3 +1,9 @@
+module d_flipflop_8bit (input logic clk, logic[7:0] d, output logic[7:0] q);
+  always_ff @(posedge clk) begin
+	q <= d; 
+  end
+endmodule
+
 module ALU(input logic[3:0] alu_in1, alu_in2, logic[2:0] alu_func , logic alu_op, output logic[3:0] alu_out, logic Carry_f, Zero_f);
 
 	always_comb begin
@@ -88,37 +94,38 @@ module reg8x8(input logic regWrite,
 endmodule
 
 module PC(input logic[7:0] branch_addr, logic jumpCond, clk, output int PC_Out);
-  int current_addr;
-  int next_addr;
+  logic[7:0] current_addr;
+  logic[7:0] next_addr;
   always_comb begin
-    if (jumpCond == 0) next_addr = current_addr + 1;
+    if (jumpCond == 0) next_addr = current_addr + 2;
     else if(jumpCond == 1) next_addr = branch_addr;
  	PC_Out = current_addr;
+	if(next_addr > 8'b1111_1111) next_addr = 0; 
   end
-  d_flipflop_7bit ff(.clk(clk), .d(next_addr), .q(current_addr));
+  d_flipflop_8bit ff(.clk(clk), .d(next_addr), .q(current_addr));
 endmodule
 
 
-// opcode 1+2
-module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data1, rom_data2);
-	logic[7:0] rom [0:255];
-	int i;
-	initial begin
-		for(i=0; i<256; i = i + 1 ) begin
-			rom[i] = 8'b0000_0000;
-		end
-	end
+// // opcode 1+2
+// module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data1, rom_data2);
+// 	logic[7:0] rom [0:255];
+// 	int i;
+// 	initial begin
+// 		for(i=0; i<256; i = i + 1 ) begin
+// 			rom[i] = 8'b0000_0000;
+// 		end
+// 	end
 
-	// assign rom
-	rom[0] = 8'b0000_0000; //nop
-	rom[1] = 8'b0010_1111; //load reg 15
-	rom[2] = 8'b0000_0001; //from mem(ram) 1 
+// 	// assign rom
+// 	rom[0] = 8'b0000_0000; //nop
+// 	rom[1] = 8'b0010_1111; //load reg 15
+// 	rom[2] = 8'b0000_0001; //from mem(ram) 1 
  
-	always_comb begin
-		rom_data1 = rom[rom_address];
-		rom_data2 = (rom_address == 255) ? 8'b0000_0000:rom[rom_address+1];
-	end
-endmodule
+// 	always_comb begin
+// 		rom_data1 = rom[rom_address];
+// 		rom_data2 = (rom_address == 255) ? 8'b0000_0000:rom[rom_address+1];
+// 	end
+// endmodule
 
 module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
 				output logic n_cs, n_oe, n_we, regdest, alu_op, regWrite, jumpCond, logic[1:0] mem_to_reg, logic[2:0] alu_func)

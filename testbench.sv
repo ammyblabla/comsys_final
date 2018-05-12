@@ -1,0 +1,1 @@
+module testbench(output logic[7:0] opcode1, opcode2);
