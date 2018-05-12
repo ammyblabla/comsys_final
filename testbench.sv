@@ -17,6 +17,9 @@ module testbench(output logic[7:0] opcode1, opcode2, logic reset);
 		// reg 0000+0001 = reg 0011
 		#2 opcode1 = 8'b1000_0000; opcode2 = 8'b0001_0011;
 		// #2 opcode1 = 8'b1000_0000; opcode2 = 8'b0001_0011;
+      	// store reg 0000 to mem 1000_0010
+        #2 opcode1 = 8'b0011_0011; opcode2 = 8'b1000_0010;
+
 	end
 
 endmodule
@@ -28,7 +31,7 @@ module top;
 	initial begin
 		$dumpfile("dump.vcd");
 		$dumpvars(1);
-		#50 $finish;
+		#15 $finish;
 	end
 	initial begin
 		clk = 1;

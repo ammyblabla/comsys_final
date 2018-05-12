@@ -6,6 +6,10 @@ endmodule
 
 module ALU(input wire[7:0] alu_in1, logic[7:0] alu_in2, logic[2:0] alu_func , logic alu_op, output logic[7:0] alu_out, logic Carry_f, Zero_f);
 
+	initial begin
+		$monitor("ALU time=%d alu_in1=%b alu_in2=%b alu_out=%b carry=%b zero=%b alu_func=%b alu_op=%b", $time, alu_in1, alu_in2, alu_out, Carry_f, Zero_f, alu_func, alu_op);	
+	end
+
 	always_comb begin
 		if(alu_op) begin
 			if(alu_func == 3'b000) begin
@@ -113,7 +117,7 @@ module reg16x8(input logic clk, regWrite,
 	// end
 
 	// always_ff @(negedge clk) begin
-		if(~clk) begin
+		if(clk) begin
 			if(regWrite) register[reg_write_addr] <= reg_d_in;
 		end
 	end
@@ -230,7 +234,7 @@ module Datapath(input logic[7:0] opcode1, opcode2,
 	RAM256x8 ram (.ram_data_in(ram_data_in),.ram_data_out(ram_data_out), .ram_address(opcode2), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .clk(clk));
 
 
-	ALU alu (.alu_in1(ram_data_out), .alu_in2(alu_in2), .alu_func(alu_func) , .alu_op(alu_op), .alu_out(alu_out), .Carry_f(Carry_f), .Zero_f(Zero_f));
+	ALU alu (.alu_in1(ram_data_in), .alu_in2(alu_in2), .alu_func(alu_func) , .alu_op(alu_op), .alu_out(alu_out), .Carry_f(Carry_f), .Zero_f(Zero_f));
 
 endmodule
 
