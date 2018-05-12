@@ -1,5 +1,5 @@
 module d_flipflop_8bit (input logic clk, logic[7:0] d, output logic[7:0] q);
-  always_ff @(posedge clk) begin
+  always_ff @(posedge clk, negedge clk) begin
 	q <= d; 
   end
 endmodule
@@ -50,6 +50,8 @@ endmodule // ALU8bit
 // n_cs = not chip select, n_oe = not read mode, n_we = not write mode
 module RAM256x8 (inout logic[7:0] ram_data, input logic[7:0] ram_address, input logic n_cs, n_oe, n_we, clk);
     logic[7:0] ram [255:0];
+	
+
     assign ram_data = (~n_cs & ~n_oe) ? ram[ram_address] : 8'bz;
 
     // always_latch begin
@@ -94,16 +96,23 @@ module reg16x8(input logic regWrite,
 	end
 endmodule
 
-module PC(input logic[7:0] branch_addr, logic jumpCond, clk, output logic[7:0] PC_Out);
-  logic[7:0] current_addr;
-  logic[7:0] next_addr;
-  always_comb begin
-    if (jumpCond == 0) next_addr = current_addr + 2;
-    else if(jumpCond == 1) next_addr = branch_addr;
- 	PC_Out = current_addr;
-	if(next_addr > 8'b1111_1111) next_addr = 0; 
-  end
-  d_flipflop_8bit ff(.clk(clk), .d(next_addr), .q(current_addr));
+module PC(input logic[7:0] branch_addr, logic jumpCond, clk,reset ,output logic[7:0] PC_Out);
+	logic[7:0] current_addr;
+	logic[7:0] next_addr;
+
+	initial begin
+		$monitor("PC	branch_addr=%b	jumpcond=%b	current_addr=%b	next_addr=%b	reset=%b", branch_addr, jumpCond, current_addr, next_addr,reset);
+	end
+
+	always_comb begin
+		if(reset) next_addr = 8'b0000_0000;
+		else if (jumpCond == 0) next_addr = current_addr + 2;
+		else if(jumpCond == 1) next_addr = branch_addr;
+		PC_Out = current_addr;
+
+		if(next_addr > 8'b1111_1111) next_addr = 0; 
+	end
+	d_flipflop_8bit ff(.clk(clk), .d(next_addr), .q(current_addr));
 endmodule
 
 module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
@@ -170,13 +179,8 @@ module Datapath(inout logic[7:0] ram_data,
 					logic n_cs, n_oe, n_we, regdest, alu_op, jumpCond, clk, regWrite, reset,
 				output logic[7:0] rom_address, logic Carry_f, Zero_f);
 
-	logic [7:0] alu_in1;
-	logic [7:0] alu_in2;
-	logic [7:0] adder_out;
-	logic [7:0] reg_d_in;
+	logic [7:0] alu_in2, reg_d_in, reg_d_out2, alu_out;
 	logic [2:0] reg_write_addr, alu_func;
-	logic [7:0] reg_d_out2;
-	logic [7:0] alu_out;
 
 	// assign alu_in1 = reg_d_out1;
 	assign alu_in2 = reg_d_out2;
@@ -191,16 +195,17 @@ module Datapath(inout logic[7:0] ram_data,
 		$monitor("datapath	time=%d	alu_op=%b	alu_func=%b	alu_in2=%b	alu_out=%b", $time, alu_op, alu_func,  alu_in2, alu_out);
 	end 
 
-	PC pc (.branch_addr(opcode2), .jumpCond(jumpCond), .clk(clk), .PC_Out(rom_address));
+	PC pc (.branch_addr(opcode2), .jumpCond(jumpCond), .clk(clk),.reset(reset), .PC_Out(rom_address));
 	mux2to1_4bit regDest_mux (.mux4_in1(opcode1[3:0]), .mux4_in2(opcode2[3:0]), .mux4_sel(regdest), .mux4_out(reg_write_addr));
 	mux4to1_8bit mem_to_reg_mux (.mux8_in1(opcode2), .mux8_in2(ram_data), .mux8_in3(alu_out),.mux8_in4(8'b0000_0000),.mux8_sel(mem_to_reg), .mux8_out(reg_d_in));
-	reg16x8 registers (.regWrite(regWrite),.reg_read_addr1(opcode1[3:0]), .reg_read_addr2(opcode2[7:4]), .reg_write_addr(reg_write_addr), .reg_d_in(reg_d_in), .reg_d_out1(reg_d_out1), .reg_d_out2(reg_d_out2));
+	reg16x8 registers (.regWrite(regWrite),.reg_read_addr1(opcode1[3:0]), .reg_read_addr2(opcode2[7:4]), .reg_write_addr(reg_write_addr), .reg_d_in(reg_d_in), .reg_d_out1(ram_data), .reg_d_out2(reg_d_out2));
 	RAM256x8 ram (.ram_data(ram_data), .ram_address(opcode2), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .clk(clk));
 	ALU alu (.alu_in1(ram_data), .alu_in2(alu_in2), .alu_func(alu_func) , .alu_op(alu_op), .alu_out(alu_out), .Carry_f(Carry_f), .Zero_f(Zero_f));
 
 endmodule
 
-module CPU(input  logic[7:0] opcode1, opcode2 ,
+module CPU(inout logic[7:0] ram_data,
+			input  logic[7:0] opcode1, opcode2 ,
 				  logic clk, reset, 
 		   output logic[7:0] rom_address);
 
