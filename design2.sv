@@ -173,11 +173,10 @@ module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
 	end
 endmodule
 
-module datapath(inout logic[7:0] ram_data,
-				input logic[7:0] opcode1, opcode2,
+module Datapath(input logic[7:0] opcode1, opcode2,
 					logic [1:0] mem_to_reg,
-					logic  Carry_f, Zero_f, n_cs, n_oe, n_we, regdest, alu_op, jumpCond, clk, regWrite, reset
-				output logic[7:0] rom_address);
+					logic n_cs, n_oe, n_we, regdest, alu_op, jumpCond, clk, regWrite, reset,
+				output logic[7:0] rom_address, logic Carry_f, Zero_f);
 
 	logic [3:0] alu_in1;
 	logic [3:0] alu_in2;
@@ -189,7 +188,6 @@ module datapath(inout logic[7:0] ram_data,
 
 	assign alu_in1 = reg_d_out1;
 	assign alu_in2 = reg_d_out2;
-	assign din_1_load = ram_data[opcode2];
 	assign ram_data = reg_d_out1;
 
 	PC pc (.branch_addr(opcode2), .jumpCond(jumpCond), .clk(clk), .PC_out(rom_address));
@@ -202,7 +200,15 @@ module datapath(inout logic[7:0] ram_data,
 endmodule
 
 
-module CPU(input clk, reset);
+module CPU(input  logic[7:0] opcode1, opcode2 ,
+				  logic clk, reset, 
+		   output logic[7:0] rom_address);
 
+	logic[1:0] mem_to_reg, alu_func;
+	logic n_cs, n_oe, n_we, regdest, alu_op, regWrite, jumpCond, Carry_f, Zero_f;
+
+	Controller controller (.opcode1(opcode1), .Carry_f(Carry_f), .Zero_f(Zero_f), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .regdest(regdest), .alu_op(alu_op), .regWrite(regWrite), .jumpCond(jumpCond), .mem_to_reg(mem_to_reg), .alu_func(alu_func));
+
+	Datapath datapath (.opcode1(opcode1), .opcode2(opcode2),.mem_to_reg(mem_to_reg),.n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .regdest(regdest), .alu_op(alu_op), .jumpCond(jumpCond), .clk(clk), regWrite(regWrite), .reset(reset),.rom_address(rom_address), .Carry_f(Carry_f), .Zero_f(Zero_f));
 
 endmodule
