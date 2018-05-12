@@ -50,10 +50,10 @@ endmodule // ALU8bit
 // n_cs = not chip select, n_oe = not read mode, n_we = not write mode
 module RAM256x8 (inout logic[7:0] ram_data, input logic[7:0] ram_address, input logic n_cs, n_oe, n_we, clk);
     logic[7:0] ram [255:0];
-    assign data = (~n_cs & ~n_oe) ? ram_data[ram_address] : 8'bz;
+    assign ram_data = (~n_cs & ~n_oe) ? ram_data[ram_address] : 8'bz;
 
     // always_latch begin
-    always_ff @(posedge clk)
+    always_ff @(posedge clk) begin
         if(~n_cs & n_oe & ~n_we)
             ram[ram_address] <= ram_data;
     end
@@ -105,33 +105,16 @@ module PC(input logic[7:0] branch_addr, logic jumpCond, clk, output int PC_Out);
   d_flipflop_8bit ff(.clk(clk), .d(next_addr), .q(current_addr));
 endmodule
 
-
-// // opcode 1+2
-// module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data1, rom_data2);
-// 	logic[7:0] rom [0:255];
-// 	int i;
-// 	initial begin
-// 		for(i=0; i<256; i = i + 1 ) begin
-// 			rom[i] = 8'b0000_0000;
-// 		end
-// 	end
-
-// 	// assign rom
-// 	rom[0] = 8'b0000_0000; //nop
-// 	rom[1] = 8'b0010_1111; //load reg 15
-// 	rom[2] = 8'b0000_0001; //from mem(ram) 1 
- 
-// 	always_comb begin
-// 		rom_data1 = rom[rom_address];
-// 		rom_data2 = (rom_address == 255) ? 8'b0000_0000:rom[rom_address+1];
-// 	end
-// endmodule
-
 module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
-				output logic n_cs, n_oe, n_we, regdest, alu_op, regWrite, jumpCond, logic[1:0] mem_to_reg, logic[2:0] alu_func)
+				output logic n_cs, n_oe, n_we, regdest, alu_op, regWrite, jumpCond, logic[1:0] mem_to_reg, logic[2:0] alu_func);
 	
 	logic isJumpOpcode;
-	logic jumpFunc[2:0]
+	logic jumpFunc[2:0];
+
+	initial begin
+		$monitor("controller	time=%d	opcode1=%b	Carry_f=%b	Zero_f=%b",$time,opcode1,Carry_f,Zero_f);
+		$monitor("controller	time=%d	n_cs=%d	n_oe=%d	n_we=%d	regdest=%d	alu_op=%d	regWrite=%d	jumpCond=%d	mem_to_reg=%b	alu_func=%b",$time, n_cs, n_oe, n_we, regdest, alu_op, regWrite, jumpCond,  mem_to_reg, alu_func);
+	end 
 
 	always_comb begin
 		// load reg with immediate value
@@ -197,15 +180,22 @@ module Datapath(input logic[7:0] opcode1, opcode2,
 	assign alu_in2 = reg_d_out2;
 	assign ram_data = reg_d_out1;
 
+	initial begin
+		$monitor("datapath	time=%d	opcode1=%b	opcode2=%b rom_address=%b", $time, opcode1, opcode2);
+		$monitor("datapath	time=%d	n_cs=%d	n_oe=%d	n_we=%d	regdest=%d	alu_op=%d	regWrite=%d	jumpCond=%d	mem_to_reg=%b	alu_func=%b",$time, n_cs, n_oe, n_we, regdest, alu_op, regWrite, jumpCond,  mem_to_reg, alu_func);
+		$monitor("datapath	time=%d	Carry_f=%d	Zero_f=%d reset=%d",$time,Carry_f,Zero_f,reset);
+		$monitor("datapath	time=%d	reg_d_out1=%b	reg_d_out2=%b	reg_d_in=%b	reg_write_addr=%b", $time, reg_d_out1, reg_d_out2, reg_d_in, reg_write_addr);
+		$monitor("datapath	time=%d	alu_op=%b	alu_func=%b	alu_in1=%b	alu_in2=%b	alu_out=%b", $time, alu_op, alu_func, alu_in1, alu_in2, alu_out);
+	end 
+
 	PC pc (.branch_addr(opcode2), .jumpCond(jumpCond), .clk(clk), .PC_out(rom_address));
 	mux2to1_4bit regDest_mux (.mux4_in1(opcode1[3:0]), .mux4_in2(opcode2[3:0]), .mux4_sel(regdest), .mux4_out(reg_write_addr));
-	mux4to1_8bit mem_to_reg_mux (.mux8_in1(opcode2), mux8_in2(ram_data), .mux8_in3(alu_out),.mux8_in4(8'b0000_0000),.mem_to_reg(mem_to_re), .mux8_out(reg_d_in));
+	mux4to1_8bit mem_to_reg_mux (.mux8_in1(opcode2), mux8_in2(ram_data), .mux8_in3(alu_out),.mux8_in4(8'b0000_0000),.mem_to_reg(mem_to_reg), .mux8_out(reg_d_in));
 	reg8x8 registers (.regWrite(regWrite),.reg_read_addr1(opcode1[3:0]), .reg_read_addr2(opcode2[7:4]), .reg_write_addr(reg_write_addr), reg_d_in(reg_d_in), .reg_d_out1(reg_d_out1), .reg_d_out2(reg_d_out2));
 	RAM256x8 ram (.ram_data(reg_d_out1), .ram_address(opcode2), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .clk(clk));
 	ALU alu (.alu_in1(alu_in1), .alu_in2(alu_in2), .alu_func(alu_func) , .alu_op(alu_op), .alu_out(alu_out), .Carry_f(Carry_f), .Zero_f(Zero_f));
 
 endmodule
-
 
 module CPU(input  logic[7:0] opcode1, opcode2 ,
 				  logic clk, reset, 
@@ -213,9 +203,13 @@ module CPU(input  logic[7:0] opcode1, opcode2 ,
 
 	logic[1:0] mem_to_reg, alu_func;
 	logic n_cs, n_oe, n_we, regdest, alu_op, regWrite, jumpCond, Carry_f, Zero_f;
+	logic clk;
 
 	Controller controller (.opcode1(opcode1), .Carry_f(Carry_f), .Zero_f(Zero_f), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .regdest(regdest), .alu_op(alu_op), .regWrite(regWrite), .jumpCond(jumpCond), .mem_to_reg(mem_to_reg), .alu_func(alu_func));
 
 	Datapath datapath (.opcode1(opcode1), .opcode2(opcode2),.mem_to_reg(mem_to_reg),.n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .regdest(regdest), .alu_op(alu_op), .jumpCond(jumpCond), .clk(clk), regWrite(regWrite), .reset(reset),.rom_address(rom_address), .Carry_f(Carry_f), .Zero_f(Zero_f));
 
+	initial begin
+		$monitor("CPU	time=%d	opcode1=%b	opcode2=%b	rom_address=%b",$time, opcode1, opcode2, rom_address);
+	end
 endmodule
