@@ -1,20 +1,21 @@
 module testbench(output logic[7:0] opcode1, opcode2, logic reset);    
     
 	initial begin
-		   reset = 0; opcode1 = 8'b0000_0000; opcode2 = 8'b0000_0000; 
+		   reset = 1; opcode1 = 8'b0000_0000; opcode2 = 8'b0000_0000; 
+		#2 reset = 0;
 		// store and load
 		// load reg 0000 with imm 1111_1111
-		#1 opcode1 = 8'b0001_0000; opcode2 = 8'b1111_1111;
-		//load reg 0011 from mem 0000_1111
-		#1 opcode1 = 8'b0010_0010; opcode2 = 8'b0000_1111;
-		// store reg 0011 to mem 1000_0011
-		#1 opcode1 = 8'b0011_0011; opcode2 = 8'b1000_0011;
+		#2 opcode1 = 8'b0001_0000; opcode2 = 8'b1111_1111;
+		// store reg 0000 to mem 1000_0011
+		#2 opcode1 = 8'b0011_0000; opcode2 = 8'b1000_0011;
+		//load reg 0000 from mem 1000_0011
+		#2 opcode1 = 8'b0010_0000; opcode2 = 8'b1000_0011;
 
 	end
 
 endmodule
 
-module top(inout logic[7:0] ram_data);
+module top;
 	logic[7:0] opcode1, opcode2;
 	logic clk, reset;
 	logic[7:0] rom_address;
@@ -24,12 +25,12 @@ module top(inout logic[7:0] ram_data);
 		#50 $finish;
 	end
 	initial begin
-		clk = 0;
+		clk = 1;
 		forever #1 clk = ~clk;
 	end
 
 	testbench t (.opcode1(opcode1), .opcode2(opcode2), .reset(reset));
-	CPU cpu (.ram_data(ram_data),.opcode1(opcode1), .opcode2(opcode2), .clk(clk), .reset(reset), .rom_address(rom_address));
+	CPU cpu (.opcode1(opcode1), .opcode2(opcode2), .clk(clk), .reset(reset), .rom_address(rom_address));
 endmodule
 
 
