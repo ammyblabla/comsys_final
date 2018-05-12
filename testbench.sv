@@ -14,7 +14,6 @@ module top;
 	initial begin
 		$dumpfile("dump.vcd");
 		$dumpvars(1);
-		$monitor("%b", a);
 	end
 
 	initial begin
@@ -22,7 +21,7 @@ module top;
 		forever #1 clk = ~clk;
 	end
 
-	testbench t (.opcode1(opcode1), .opcode2(opcode2), .reset(reset))
+	testbench t (.opcode1(opcode1), .opcode2(opcode2), .reset(reset));
 	CPU cpu (.opcode1(opcode1), .opcode2(opcode2), .clk(clk), .reset(reset), .rom_address(rom_address));
 endmodule
 
