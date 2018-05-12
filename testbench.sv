@@ -60,6 +60,9 @@ module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data1, rom_dat
 		// store reg 0011 to mem 1000_0010
 		rom[10] = 8'b0011_0011;
 		rom[11] = 8'b1000_0010;
+		// load to reg 0000from mem 0111_0011
+		rom[12] = 8'b0010_0000;
+		rom[13] = 8'b0111_0011;
 	end
 
 	always_comb begin

@@ -61,12 +61,9 @@ module RAM256x8 (output wire[7:0] ram_data_out, input logic[7:0] ram_address,ram
 
     assign ram_data_out= (~n_cs & ~n_oe) ? ram[ram_address] : 8'bz;
 
-    // always_latch begin
     always_ff @(posedge clk) begin
         if(~n_cs & n_oe & ~n_we)
             ram[ram_address] <= ram_data_in;
-		// else if (~n_cs & ~n_oe)
-		// 	ram_data_out <= ram[ram_address];
     end
 endmodule
 
@@ -108,18 +105,14 @@ module reg16x8(input logic clk, regWrite,
 		// $monitor("reg time=%d write_result reg[%b]=%b reg_d_in=%b", $time, reg_write_addr, register[reg_write_addr], reg_d_in);
 		// $monitor("reg time=%d read_result 1 reg[%b]=%b 2 reg[%b]=%b", $time, reg_d_out1, register[reg_d_out1], reg_d_out2, register[reg_d_out2]);
 	end
-	// assign reg_d_out1 = (~regWrite)?register[reg_read_addr1]:8'bz;
-	// assign reg_d_out2 = (~regWrite)?register[reg_read_addr2]:8'bz;
 
 	always_latch begin
 		reg_d_out1 <= register[reg_read_addr1];
 		reg_d_out2 <= register[reg_read_addr2];
-	// end
+	end
 
-	// always_ff @(negedge clk) begin
-		if(clk) begin
-			if(regWrite) register[reg_write_addr] <= reg_d_in;
-		end
+	always_ff @(negedge clk) begin
+		if(regWrite) register[reg_write_addr] <= reg_d_in;
 	end
 
 endmodule
