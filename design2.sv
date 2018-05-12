@@ -134,10 +134,9 @@ module PC(input logic[7:0] branch_addr, logic jumpCond, clk,reset ,output logic[
 
 	always_comb begin
 		if(reset) next_addr = 8'b0000_0000;
-		else if (jumpCond == 0) next_addr = current_addr + 2;
 		else if(jumpCond == 1) next_addr = branch_addr;
+		else next_addr = current_addr + 2;
 		PC_Out = current_addr;
-
 		if(next_addr > 8'b1111_1111) next_addr = 0; 
 	end
 	d_flipflop_8bit ff(.clk(clk), .d(next_addr), .q(current_addr));
@@ -203,7 +202,7 @@ endmodule
 
 module Datapath(input logic[7:0] opcode1, opcode2,
 					logic [1:0] mem_to_reg,
-					logic n_cs, n_oe, n_we, regdest, alu_op, jumpCond, clk, regWrite, reset,
+					logic n_cs, n_oe, n_we, regdest, alu_op, jumpCond, clk, regWrite, reset, pc_clk,
 				output logic[7:0] rom_address, logic Carry_f, Zero_f);
 
 	logic [7:0] alu_in2, reg_d_in, reg_d_out2, alu_out,ram_data_in;
@@ -224,7 +223,7 @@ module Datapath(input logic[7:0] opcode1, opcode2,
 		$monitor("datapath	time=%d	alu_op=%b	alu_func=%b	alu_in2=%b	alu_out=%b", $time, alu_op, alu_func,  alu_in2, alu_out);
 	end 
 
-	PC pc (.branch_addr(opcode2), .jumpCond(jumpCond), .clk(clk),.reset(reset), .PC_Out(rom_address));
+	PC pc (.branch_addr(opcode2), .jumpCond(jumpCond), .clk(pc_clk),.reset(reset), .PC_Out(rom_address));
 	mux2to1_4bit regDest_mux (.mux4_in1(opcode1[3:0]), .mux4_in2(opcode2[3:0]), .mux4_sel(regdest), .mux4_out(reg_write_addr));
 	// mux select write to reg data
 	mux4to1_8bit mem_to_reg_mux (.mux8_in1(opcode2), .mux8_in3(alu_out),.mux8_in4(8'b0000_0000),.mux8_sel(mem_to_reg), .mux8_out(reg_d_in), .mux8_in2(ram_data_out));
@@ -239,7 +238,7 @@ module Datapath(input logic[7:0] opcode1, opcode2,
 endmodule
 
 module CPU(input  logic[7:0] opcode1, opcode2,
-				  logic clk, reset, 
+				  logic clk, reset, pc_clk,
 		   output logic[7:0] rom_address);
 
 	logic[1:0] mem_to_reg;
@@ -248,7 +247,7 @@ module CPU(input  logic[7:0] opcode1, opcode2,
 
 	Controller controller (.opcode1(opcode1), .Carry_f(Carry_f), .Zero_f(Zero_f), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .regdest(regdest), .alu_op(alu_op), .regWrite(regWrite), .jumpCond(jumpCond), .mem_to_reg(mem_to_reg), .alu_func(alu_func));
 
-	Datapath datapath (.opcode1(opcode1), .opcode2(opcode2),.mem_to_reg(mem_to_reg), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .regdest(regdest), .alu_op(alu_op), .jumpCond(jumpCond), .clk(clk), .regWrite(regWrite), .reset(reset),.rom_address(rom_address), .Carry_f(Carry_f), .Zero_f(Zero_f));
+	Datapath datapath (.opcode1(opcode1), .opcode2(opcode2),.mem_to_reg(mem_to_reg), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .regdest(regdest), .alu_op(alu_op), .jumpCond(jumpCond), .clk(clk), .regWrite(regWrite), .reset(reset),.rom_address(rom_address), .Carry_f(Carry_f), .Zero_f(Zero_f),.pc_clk(pc_clk));
 
 	initial begin
 		$monitor("CPU	time=%d	opcode1=%b	opcode2=%b	rom_address=%b",$time, opcode1, opcode2, rom_address);
