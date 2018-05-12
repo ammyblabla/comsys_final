@@ -3,14 +3,20 @@ module testbench(output logic[7:0] opcode1, opcode2, logic reset);
 	initial begin
 		   reset = 1; opcode1 = 8'b0000_0000; opcode2 = 8'b0000_0000; 
 		#2 reset = 0;
-		// store and load
-		// load reg 0000 with imm 1111_1111
+		// // store and load
+		// // load reg 0000 with imm 1111_1111
 		#2 opcode1 = 8'b0001_0000; opcode2 = 8'b1111_1111;
-		// store reg 0000 to mem 1000_0011
-		#2 opcode1 = 8'b0011_0000; opcode2 = 8'b1000_0011;
-		//load reg 0000 from mem 1000_0011
-		#2 opcode1 = 8'b0010_0000; opcode2 = 8'b1000_0011;
+		#2 opcode1 = 8'b0001_0001; opcode2 = 8'b0000_0001;
+		#2 opcode1 = 8'b0001_0010; opcode2 = 8'b1111_1000;
 
+		// // store reg 0000 to mem 1000_0011
+		// #2 opcode1 = 8'b0011_0000; opcode2 = 8'b1000_0011;
+		// //load reg 0000 from mem 1000_0011
+		// #2 opcode1 = 8'b0010_0000; opcode2 = 8'b1000_0011;
+		// ALU
+		// reg 0000+0001 = reg 0011
+		#2 opcode1 = 8'b1000_0000; opcode2 = 8'b0001_0011;
+		// #2 opcode1 = 8'b1000_0000; opcode2 = 8'b0001_0011;
 	end
 
 endmodule
