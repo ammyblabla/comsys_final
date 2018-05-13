@@ -7,7 +7,7 @@ endmodule
 module ALU(input wire[7:0] alu_in1, logic[7:0] alu_in2, logic[2:0] alu_func , logic alu_op, clk, output logic[7:0] alu_out, logic Carry_f, Zero_f);
 
 	initial begin
-		$monitor("ALU time=%d alu_in1=%b alu_in2=%b alu_out=%b carry=%b zero=%b alu_func=%b alu_op=%b", $time, alu_in1, alu_in2, alu_out, Carry_f, Zero_f, alu_func, alu_op);	
+		$monitor("ALU time=%d alu_in1=%b alu_in2=%b alu_out=%b carry=%b zero=%b alu_func=%b alu_op=%b clk=%b", $time, alu_in1, alu_in2, alu_out, Carry_f, Zero_f, alu_func, alu_op, clk);	
 	end
 
 	always_comb begin
@@ -15,38 +15,45 @@ module ALU(input wire[7:0] alu_in1, logic[7:0] alu_in2, logic[2:0] alu_func , lo
 			if(alu_func == 3'b000) begin
 				alu_out = alu_in1 + alu_in2;
 				Carry_f = (alu_in1[7] | alu_in2[7]) & (~alu_out[7]);
+				Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 			end
 			else if (alu_func == 3'b001) begin
-			alu_out = alu_in1 - alu_in2;
-			Carry_f = ((alu_in1[7] & alu_in2[7] & alu_out[7]) | (~alu_in1[7] & alu_in2[7] & (~alu_out[7]))) ? 1:0;
+				alu_out = alu_in1 - alu_in2;
+				Carry_f = ((alu_in1[7] & alu_in2[7] & alu_out[7]) | (~alu_in1[7] & alu_in2[7] & (~alu_out[7]))) ? 1:0;
+				Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 			end
 			else if (alu_func == 3'b010) begin
 				alu_out = alu_in1 & alu_in2;
 				Carry_f = 0;
+				Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 			end
 			else if (alu_func == 3'b011) begin
 				alu_out = alu_in1 | alu_in2;
 				Carry_f = 0;
+				Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 			end
 			else if (alu_func == 3'b100) begin
 				alu_out = alu_in1 ^ alu_in2;
 				Carry_f = 0;
+				Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 			end
 			else if (alu_func == 3'b101) begin
 				alu_out = ~alu_in1;
 				Carry_f = 0;
+				Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 			end
 			else if (alu_func == 3'b110) begin
 				alu_out = alu_in1 << 1;
 				alu_out[0] = alu_in1[7];
 				Carry_f = alu_in1[7]; 
+				Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 			end
 			else if (alu_func == 3'b111) begin
 				alu_out = alu_in1 >> 1;
 				alu_out[7] = alu_in1[0];
 				Carry_f = alu_in1[7]; 
+				Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 			end
-			Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 		end
 	end
 endmodule // ALU8bit
