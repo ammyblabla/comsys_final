@@ -168,26 +168,23 @@ module Controller(input logic[7:0] opcode1, input logic Carry_f, Zero_f,
 			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 1;
 			mem_to_reg = 2'b10; jumpCond = 0;	regWrite = 1; regdest=0;
 		end
-		else if(opcode1[7:6] == 2'b01) begin
-			isJumpOpcode = (opcode1[7:4] == 0'b0100) ? 1 : 0;
+		else if(opcode1[7:4] == 4'b0100) begin
 			n_cs = 1;	n_oe = 1;	n_we = 1;	alu_op = 0;
 			mem_to_reg = 2'b11; regWrite = 0;
-			if(isJumpOpcode) begin
-				if(opcode1[2:0] == 3'b000)
-					jumpCond = 1;
-				else if(opcode1[1:0] == 2'b01) begin
-					if(opcode1[2] == 0)
-						jumpCond = Carry_f;
-					else
-						jumpCond = ~Carry_f;
-				end
-				else if(opcode1[1:0] == 2'b10) begin
-					if(opcode1[2] == 0)
-						jumpCond = Zero_f;
-					else
-						jumpCond = ~Zero_f;
-				end 
+			if(opcode1[2:0] == 3'b000)
+				jumpCond = 1;
+			else if(opcode1[1:0] == 2'b01) begin
+				if(opcode1[2] == 0)
+					jumpCond = Carry_f;
+				else
+					jumpCond = ~Carry_f;
 			end
+			else if(opcode1[1:0] == 2'b10) begin
+				if(opcode1[2] == 0)
+					jumpCond = Zero_f;
+				else
+					jumpCond = ~Zero_f;
+			end 
 			else begin
 				jumpCond = 0; regWrite = 0;
 			end
