@@ -4,14 +4,14 @@ module d_flipflop_8bit (input logic clk, logic[7:0] d, output logic[7:0] q);
   end
 endmodule
 
-module ALU(input wire[7:0] alu_in1, logic[7:0] alu_in2, logic[2:0] alu_func , logic alu_op, output logic[7:0] alu_out, logic Carry_f, Zero_f);
+module ALU(input wire[7:0] alu_in1, logic[7:0] alu_in2, logic[2:0] alu_func , logic alu_op, clk, output logic[7:0] alu_out, logic Carry_f, Zero_f);
 
 	initial begin
 		$monitor("ALU time=%d alu_in1=%b alu_in2=%b alu_out=%b carry=%b zero=%b alu_func=%b alu_op=%b", $time, alu_in1, alu_in2, alu_out, Carry_f, Zero_f, alu_func, alu_op);	
 	end
 
 	always_comb begin
-		if(alu_op) begin
+		if(alu_op & clk) begin
 			if(alu_func == 3'b000) begin
 				alu_out = alu_in1 + alu_in2;
 				Carry_f = (alu_in1[7] | alu_in2[7]) & (~alu_out[7]);
@@ -219,16 +219,17 @@ module Datapath(input logic[7:0] opcode1, opcode2,
 	end 
 
 	PC pc (.branch_addr(opcode2), .jumpCond(jumpCond), .clk(pc_clk),.reset(reset), .PC_Out(rom_address));
+	
 	mux2to1_4bit regDest_mux (.mux4_in1(opcode1[3:0]), .mux4_in2(opcode2[3:0]), .mux4_sel(regdest), .mux4_out(reg_write_addr));
+	
 	// mux select write to reg data
 	mux4to1_8bit mem_to_reg_mux (.mux8_in1(opcode2), .mux8_in3(alu_out),.mux8_in4(8'b0000_0000),.mux8_sel(mem_to_reg), .mux8_out(reg_d_in), .mux8_in2(ram_data_out));
+	
 	reg16x8 registers (.clk(clk),.regWrite(regWrite),.reg_read_addr1(opcode1[3:0]), .reg_read_addr2(opcode2[7:4]), .reg_write_addr(reg_write_addr), .reg_d_in(reg_d_in), .reg_d_out1(ram_data_in), .reg_d_out2(reg_d_out2));
-	// RAM256x8 ram (.ram_data(ram_data), .ram_address(opcode2), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .clk(clk));
 
 	RAM256x8 ram (.ram_data_in(ram_data_in),.ram_data_out(ram_data_out), .ram_address(opcode2), .n_cs(n_cs), .n_oe(n_oe), .n_we(n_we), .clk(clk));
 
-
-	ALU alu (.alu_in1(ram_data_in), .alu_in2(alu_in2), .alu_func(alu_func) , .alu_op(alu_op), .alu_out(alu_out), .Carry_f(Carry_f), .Zero_f(Zero_f));
+	ALU alu (.alu_in1(ram_data_in), .alu_in2(alu_in2), .alu_func(alu_func) , .alu_op(alu_op), .alu_out(alu_out), .Carry_f(Carry_f), .Zero_f(Zero_f), .clk(clk));
 
 endmodule
 

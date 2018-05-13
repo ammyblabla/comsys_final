@@ -46,8 +46,8 @@ module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data1, rom_dat
 		// load reg 0000 with imm 0000_0011 // multiplicant
         rom[0] = 8'b0001_0000;	rom[1] = 8'b0000_0011;
 
-		// load reg 0001 with imm 0000_0010 // multiplier
-        rom[2] = 8'b0001_0001;	rom[3] = 8'b0000_0010;
+		// load reg 0001 with imm 0000_0100 // multiplier
+        rom[2] = 8'b0001_0001;	rom[3] = 8'b0000_0100;
 
 		// load reg 0010 with imm 0000_0000 // result
         rom[4] = 8'b0001_0010;	rom[5] = 8'b0000_0000;
@@ -68,6 +68,9 @@ module ROM (input logic [7:0] rom_address, output logic [7:0] rom_data1, rom_dat
 
 		// store reg 0010 to mem 0000_0000
         rom[14] = 8'b0001_0010;	rom[15] = 8'b0000_0000;
+
+		// load reg 0100 to mem 0000_0000
+		rom[16] = 8'b0010_0100; rom[17] = 8'b0000_0000;
 
 	end
 
