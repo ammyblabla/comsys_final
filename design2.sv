@@ -46,7 +46,7 @@ module ALU(input wire[7:0] alu_in1, logic[7:0] alu_in2, logic[2:0] alu_func , lo
 				alu_out[7] = alu_in1[0];
 				Carry_f = alu_in1[7]; 
 			end
-			Zero_f = (alu_out == 4'b0000) ? 1:0;
+			Zero_f = (alu_out == 8'b0000_0000) ? 1:0;
 		end
 	end
 endmodule // ALU8bit
